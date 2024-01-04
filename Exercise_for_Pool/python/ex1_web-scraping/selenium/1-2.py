@@ -4,6 +4,10 @@ import re
 import pandas as pd
 import time
 
+# 波ダッシュを空白に変換する関数
+def clean_text(text):
+    return re.sub(r'\uff5e', ' ', text)
+
 def main():
     # Chrome WebDriverのオプションを設定
     options = webdriver.ChromeOptions()
@@ -37,24 +41,18 @@ def main():
         mail = ""
 
         # 店名
-        store = driver.find_element(By.ID, "info-name").text
-        #print(store)
+        store = clean_text(driver.find_element(By.ID, "info-name").text)
 
         # 電話番号
-        phone = driver.find_element(By.CLASS_NAME, "number").text
-        #print(phone)
+        phone = clean_text(driver.find_element(By.CLASS_NAME, "number").text)
 
         # 住所
-        address = driver.find_element(By.CLASS_NAME, "region").text
-        #print(address)
+        address = clean_text(driver.find_element(By.CLASS_NAME, "region").text)
 
         # 建物
-        #building = driver.find_element(By.CLASS_NAME, "locality").text
-        #print(building)
         locality_elements = driver.find_elements(By.CLASS_NAME, "locality")
         if locality_elements:
-            building = locality_elements[0].text
-            #print(building)
+            building = clean_text(locality_elements[0].text)
         else:
             print("要素が見つかりませんでした。")    
 
@@ -113,7 +111,7 @@ def main():
     #print(df)
 
     # CSVファイルに保存
-    df.to_csv('sample.csv', index=False)
+    df.to_csv('sample.csv', index=False, encoding='shift-jis')
 
 if __name__ == "__main__":
     main()
