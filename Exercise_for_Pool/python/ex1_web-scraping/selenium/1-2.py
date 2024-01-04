@@ -27,10 +27,11 @@ def main():
     loop_count = 50
 
     for i in range(loop_count):
+        # アイドリングタイム（3秒）を追加
+        time.sleep(3)
+
         # ブラウザで指定されたURLを開く
         driver.get(url)
-
-        time.sleep(3)
 
         # メールアドレス (仮で空の文字列を設定)
         mail = ""
