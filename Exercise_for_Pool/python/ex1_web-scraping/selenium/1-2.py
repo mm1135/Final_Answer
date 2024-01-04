@@ -54,7 +54,8 @@ def main():
         if locality_elements:
             building = clean_text(locality_elements[0].text)
         else:
-            print("要素が見つかりませんでした。")    
+            print("要素が見つかりませんでした。")   
+            building = ""
 
         # 正規表現パターン
         pattern = r'^(.+?[都道府県])([^\d]+)(.+)$'
@@ -111,7 +112,7 @@ def main():
     #print(df)
 
     # CSVファイルに保存
-    df.to_csv('sample.csv', index=False, encoding='shift-jis')
+    df.to_csv('1-2.csv', index=False, encoding='shift-jis')
 
 if __name__ == "__main__":
     main()
