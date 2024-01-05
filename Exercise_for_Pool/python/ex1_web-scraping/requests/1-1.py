@@ -1,152 +1,101 @@
-# 必要なモジュールをインポート
-from bs4 import BeautifulSoup
 import requests
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 import re
 import pandas as pd
 import time
 
-# ぐるなびのurl
-urls = [
-    "https://r.gnavi.co.jp/c088t36g0000/?sc_type=area&sc_area=jp&sc_dsp=rs_203965",
-    "https://r.gnavi.co.jp/aeebgy0w0000/?sc_type=area&sc_area=jp&sc_dsp=rs_202426",
-    "https://r.gnavi.co.jp/fdn145ys0000/?sc_type=area&sc_area=jp&sc_dsp=rs_204129",
-    "https://r.gnavi.co.jp/pph4y6np0000/?sc_type=area&sc_area=jp&sc_dsp=rs_203303",
-    "https://r.gnavi.co.jp/asbe5e280000/?sc_type=area&sc_area=jp&sc_dsp=rs_206016",
-    "https://r.gnavi.co.jp/3f6ev8pe0000/?sc_type=area&sc_area=jp&sc_dsp=rs_204170",
-    "https://r.gnavi.co.jp/7u7cvkur0000/?sc_type=area&sc_area=jp&sc_dsp=rs_202784",
-    "https://r.gnavi.co.jp/hrcjvea30000/?sc_type=area&sc_area=jp&sc_dsp=rs_203487",
-    "https://r.gnavi.co.jp/nycwthv00000/?sc_type=area&sc_area=jp&sc_dsp=rs_201383",
-    "https://r.gnavi.co.jp/8xz3f7hg0000/?sc_type=area&sc_area=jp&sc_dsp=rs_201291",
-    "https://r.gnavi.co.jp/ptytkyga0000/?sc_type=area&sc_area=jp&sc_dsp=rs_203406",
-    "https://r.gnavi.co.jp/7w3g8a410000/?sc_lid=home_check_shop",
-    "https://r.gnavi.co.jp/snv8gzwj0000/?sc_type=area&sc_area=jp&sc_dsp=rs_202487",
-    "https://r.gnavi.co.jp/a096200/?sc_type=area&sc_area=jp&sc_dsp=rs_198849",
-    "https://r.gnavi.co.jp/b232405/?sc_type=area&sc_area=jp&sc_dsp=rs_199231",
-    "https://r.gnavi.co.jp/rmecc00v0000/?sc_type=area&sc_area=jp&sc_dsp=rs_199710",
-    "https://r.gnavi.co.jp/ku6gdpmx0000/?sc_type=area&sc_area=jp&sc_dsp=rs_203241",
-    "https://r.gnavi.co.jp/fccmb6s70000/?sc_type=area&sc_area=jp&sc_dsp=rs_200421",
-    "https://r.gnavi.co.jp/acbn169b0000/?sc_type=area&sc_area=jp&sc_dsp=rs_200400",
-    "https://r.gnavi.co.jp/pp4z1k7b0000/?sc_type=area&sc_area=jp&sc_dsp=rs_202606",
-    "https://r.gnavi.co.jp/g926002/?sc_type=area&sc_area=jp&sc_dsp=rs_201121",
-    "https://r.gnavi.co.jp/kdbd8tvy0000/?sc_type=area&sc_area=jp&sc_dsp=rs_203305",
-    "https://r.gnavi.co.jp/5fbgzxhh0000/?sc_type=area&sc_area=jp&sc_dsp=rs_206079",
-    "https://r.gnavi.co.jp/prhp6j1f0000/?sc_type=area&sc_area=jp&sc_dsp=rs_202653",
-    "https://r.gnavi.co.jp/nf6us7dj0000/?sc_type=area&sc_area=jp&sc_dsp=rs_202967",
-    "https://r.gnavi.co.jp/358ddcrm0000/?sc_type=area&sc_area=jp&sc_dsp=rs_203801",
-    "https://r.gnavi.co.jp/6c9k8wmx0000/?sc_type=area&sc_area=jp&sc_dsp=rs_205627",
-    "https://r.gnavi.co.jp/kum15p9s0000/?sc_type=area&sc_area=jp&sc_dsp=rs_207649",
-    "https://r.gnavi.co.jp/4bs240nr0000/?sc_type=area&sc_area=jp&sc_dsp=rs_203351",
-    "https://r.gnavi.co.jp/f000302/?sc_type=area&sc_area=jp&sc_dsp=rs_199861",
-    "https://r.gnavi.co.jp/933uk4hz0000/?sc_type=area&sc_area=jp&sc_dsp=rs_200301",
-    "https://r.gnavi.co.jp/hj8xdfcc0000/?sc_type=area&sc_area=jp&sc_dsp=rs_203677",
-    "https://r.gnavi.co.jp/pk7z9wdu0000/?sc_type=area&sc_area=jp&sc_dsp=rs_202079",
-    "https://r.gnavi.co.jp/rgt38r9u0000/?sc_type=area&sc_area=jp&sc_dsp=rs_203862",
-    "https://r.gnavi.co.jp/5z07du4c0000/?sc_type=area&sc_area=jp&sc_dsp=rs_201687",
-    "https://r.gnavi.co.jp/r9xe6z9s0000/?sc_type=area&sc_area=jp&sc_dsp=rs_206595",
-    "https://r.gnavi.co.jp/bjpjrbkm0000/?sc_type=area&sc_area=jp&sc_dsp=rs_201634",
-    "https://r.gnavi.co.jp/p477501/?sc_type=area&sc_area=jp&sc_dsp=rs_206867",
-    "https://r.gnavi.co.jp/rj5zxh1g0000/?sc_type=area&sc_area=jp&sc_dsp=rs_202540",
-    "https://r.gnavi.co.jp/7rebhk3c0000/?sc_type=area&sc_area=jp&sc_dsp=rs_203357",
-    "https://r.gnavi.co.jp/a2u7mn4m0000/?sc_type=area&sc_area=jp&sc_dsp=rs_202122",
-    "https://r.gnavi.co.jp/2smwygjw0000/?sc_type=area&sc_area=jp&sc_dsp=rs_202890",
-    "https://r.gnavi.co.jp/5vybz9ay0000/?sc_type=area&sc_area=jp&sc_dsp=rs_203713",
-    "https://r.gnavi.co.jp/pnusfg230000/?sc_type=area&sc_area=jp&sc_dsp=rs_202321",
-    "https://r.gnavi.co.jp/d7esc2zr0000/?sc_type=area&sc_area=jp&sc_dsp=rs_203714",
-    "https://r.gnavi.co.jp/ejbvchhr0000/?sc_type=area&sc_area=jp&sc_dsp=rs_202050",
-    "https://r.gnavi.co.jp/j70k8g9u0000/?sc_type=area&sc_area=jp&sc_dsp=rs_203146",
-    "https://r.gnavi.co.jp/rmrxrmdn0000/?sc_type=area&sc_area=jp&sc_dsp=rs_202786",
-    "https://r.gnavi.co.jp/rdx0aftf0000/?sc_type=area&sc_area=jp&sc_dsp=rs_201878",
-    "https://r.gnavi.co.jp/2savbzzc0000/?sc_type=area&sc_area=jp&sc_dsp=rs_200303"
-]
-
-# ユーザーエージェントを設定
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-}
-
-# ノーブレークスペースを空白に変換する関数
-def clean_text(text):
+def clean_text_shift_jis(text):
+    """Shift-JISエンコーディングでテキストをクリーンアップする関数"""
     if text is None:
         return ""
-    return re.sub(r'\xa0', ' ', str(text))
+
+    # テキストを文字列に変換してから shift-jis に変換
+    converted_text = str(text).encode('shift-jis', 'replace').decode('shift-jis', 'replace')
+
+    # 特定の文字を修正
+    converted_text = converted_text.replace('?', 'ー')  # ? を ー に置換
+
+    return converted_text
 
 def judge_string(soup, class_name):
-    """
-    与えられた BeautifulSoup オブジェクトから指定されたクラス名の span 要素を見つけ、
-    見つかればその文字列を返します。見つからなければ空文字列を返します。
-
-    Parameters:
-    - soup: BeautifulSoup オブジェクト
-    - class_name: span 要素のクラス名
-
-    Returns:
-    - 見つかった場合は span 要素の文字列、見つからなかった場合は空文字列
-    """
+    """指定されたクラス名で要素を探し、Shift-JISエンコーディングでクリーンアップしたテキストを返す関数"""
     item = soup.find('span', class_=class_name)
-    return item.string if item else ""
+    return clean_text_shift_jis(item.string) if item else ""
 
 def get_canonical_url(soup):
-    """
-    与えられた BeautifulSoup オブジェクトから canonical URL を取得します。
-    見つからない場合は空文字列を返します。
-
-    Parameters:
-    - soup: BeautifulSoup オブジェクト
-
-    Returns:
-    - 見つかった場合は canonical URL、見つからなかった場合は空文字列
-    """
+    """Canonical URLを取得し、Shift-JISエンコーディングでクリーンアップしたテキストを返す関数"""
     canonical_tag = soup.find('link', {'rel': 'canonical'})
-    return canonical_tag.attrs['href'] if canonical_tag else ""
+    return clean_text_shift_jis(canonical_tag.attrs['href']) if canonical_tag else ""
 
-# データを格納するリストを初期化
-data_list = []
+def get_dynamic_href(url):
+    """動的に生成されるリンクを取得する関数"""
+    # Headless ブラウザの起動
+    options = Options()
+    options.add_argument('--headless')
+    driver = webdriver.Chrome(options=options)
+    # ページを開いて JavaScript を実行
+    driver.get(url)
+    time.sleep(3)  # JavaScript の実行を待つ (必要に応じて調整)
 
-def main():
-    for url in urls:
-        # アイドリングタイム（3秒）を追加
-        time.sleep(3)
+    # BeautifulSoup でページを解析
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
 
-        # url情報を取得
+    # a タグを検索
+    a_tag = soup.find('a', class_='url go-off')
+
+    # a タグが存在するかチェックしてから href 属性を取得
+    if a_tag:
+        dynamic_href = a_tag.get('href')
+    else:
+        dynamic_href = ""
+
+    return dynamic_href
+
+def scrape_data(url, headers):
+    """指定されたURLから店舗データをスクレイピングする関数"""
+    data = {}
+
+    try:
+        # ページの取得
         response = requests.get(url, headers=headers)
-        # 文字化け防止
         response.encoding = response.apparent_encoding
-
-        # BeautifulSoupオブジェクトを作成
         soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # 店舗名の取得
+        raw_store_name = soup.find(id="info-name").string
+        store = clean_text_shift_jis(raw_store_name)
 
-        # 店名
-        store = clean_text(soup.find(id="info-name").string)
-
-        # 電話番号
-        phone = clean_text(judge_string(soup, "number"))
-
-        # 住所
-        address = clean_text(judge_string(soup, "region"))
-
-        # 建物
-        building = clean_text(judge_string(soup, "locality"))
-
-        # メールアドレス (仮で空の文字列を設定)
+        # その他の情報の取得
+        phone = judge_string(soup, "number")
+        prefecture = judge_string(soup, "region")
+        building = judge_string(soup, "locality")
         mail = ""
 
-        # 正規表現パターン
+        # 住所の正規表現パターン
         pattern = r'^(.+?[都道府県])([^\d]+)(.+)$'
-
-        # パターンにマッチする部分を検索
-        match = re.match(pattern, address)
+        match = re.match(pattern, prefecture)
         if match:
-            prefecture = match.group(1)
-            city = match.group(2)
-            rest_of_address = match.group(3)
+            prefecture = clean_text_shift_jis(match.group(1))
+            city = clean_text_shift_jis(match.group(2))
+            rest_of_address = clean_text_shift_jis(match.group(3))
         else:
             prefecture = city = rest_of_address = ""
+            
+        # 公式サイトの取得(パターン1)
+        official_url1 = soup.find('a', class_='sv-of double')
+        # official_url1 が存在する場合はその href を取得、存在しない場合は空文字列
+        official_url1_href = official_url1['href'] if official_url1 else ""
 
-        # linkタグからcanonical URLを取得する
-        canonical_url = get_canonical_url(soup)
+        # decide_url に代入する
+        if official_url1_href:
+            decide_url = official_url1_href
+        # 公式サイトの取得(パターン2 動的に取得)
+        else:
+            decide_url = get_dynamic_href(url)
 
-        # HTML内に"https"が含まれているかを確認
-        ssl = canonical_url.startswith('https')
+        ssl = decide_url.startswith('https')
 
         # データを辞書に格納
         data = {
@@ -157,18 +106,77 @@ def main():
             '市区町村': city,
             '番地': rest_of_address,
             '建物名': building,
-            'URL': canonical_url,
+            'URL': decide_url,
             'SSL': ssl
         }
 
-        # リストにデータを追加
-        data_list.append(data)
+    except Exception as e:
+        print(f"エラーが発生しました: {e}")
 
-    # データフレームを作成
+    return data
+
+def main():
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    }
+   
+    # 条件url
+    target_url = "https://r.gnavi.co.jp/area/aream2157/rs/?date=20240106"
+
+    url_list = []
+    data_list = []
+    count = 0
+    max_data_count = 50  # 取得する最大データ数
+
+    page_num = 1  # 初期ページ数
+
+    while count < max_data_count:
+
+        # p=が含まれているかどうかの判定
+        if 'p=' in target_url:
+            search_url = target_url.replace('p=1', f'p={page_num}')
+            
+        else:
+            # ? が含まれているかどうかの判定
+            if '?' in target_url:
+                 # URLを構築
+                search_url = f'{target_url}&p={page_num}'
+            else:
+                # URLを構築
+                search_url = f'{target_url}?p={page_num}'
+                
+        print(search_url)
+
+        try:
+            # ページの取得
+            time.sleep(3)
+            response = requests.get(search_url, headers=headers)
+            response.encoding = response.apparent_encoding
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            link_elements = soup.find_all('a', class_='style_titleLink__oiHVJ')
+            url_list = [link['href'] for link in link_elements] if link_elements else []
+
+            if url_list:
+                for url in url_list:
+                    count += 1
+                    if count <= max_data_count:
+                        data_list.append(scrape_data(url, headers))
+                    else:
+                        break
+
+            else:
+                print("URLが見つかりませんでした。")
+                break
+
+        except Exception as e:
+            print(f"エラーが発生しました: {e}")
+            break
+
+        page_num += 1  # 次のページへ遷移
+
     df = pd.DataFrame(data_list)
-
-    # CSVファイルに保存
-    df.to_csv('1-1.csv', index=False, encoding='shift-jis')
+    df.to_csv('1-1.csv', index=False, encoding='shift-jis')  # shift-jis エンコーディングに変更
 
 if __name__ == "__main__":
     main()
