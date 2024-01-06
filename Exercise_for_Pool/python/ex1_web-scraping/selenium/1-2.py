@@ -1,42 +1,69 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+import time
+from selenium.common.exceptions import NoSuchElementException
 import re
 import pandas as pd
-import time
 
 # 波ダッシュを空白に変換する関数
 def clean_text(text):
     return re.sub(r'\uff5e', ' ', text)
 
-def main():
-    # Chrome WebDriverのオプションを設定
-    options = webdriver.ChromeOptions()
+def clean_and_encode(text):
+    # 不要な文字を削除または適切に変換
+    cleaned_text = text.replace('\uff0d', '-')  # ハイフンに変換
+    return cleaned_text.encode('shift-jis', 'replace').decode('shift-jis', 'replace')
 
+def main():
+    options = webdriver.ChromeOptions()
     # オプション: ヘッドレスモード（画面表示なし）を有効にする場合
     options.add_argument('--headless')
-
-    # ユーザーエージェントを設定
     options.add_argument('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
-
-    # Chrome WebDriverのインスタンスを作成
     driver = webdriver.Chrome(options=options)
-
-    # 初回のアクセスするURL
-    url = 'https://r.gnavi.co.jp/7w3g8a410000/?sc_lid=r-r_display01&sc_dsp=shop_203888'
-
+    
+    count = 0
     # データを格納するリストを初期化
     data_list = []
+    
+    # 条件url
+    url = 'https://r.gnavi.co.jp/area/aream2157/rs/?date=20240106'
 
-    # ループ回数
-    loop_count = 50
+    driver.get(url)
+    
+    # ページが完全に読み込まれるまで待機
+    time.sleep(3)
+    
+    # ページ数
+    page_number = 2
+    
+    # リストの範囲内でループ 今回は50回
+    for i in range(50):
+        # 要素数の取得
+        h2_elements = driver.find_elements(By.CLASS_NAME, 'style_restaurantNameWrap__wvXSR')
+        # ページの全ての要素を取得したら次ページへ遷移する
+        if count == len(h2_elements):
+            # 親要素を取得してその中からリンクを見つける
+            parent_element = driver.find_element(By.CLASS_NAME, "style_pageNation__AZy1A")
+            try:
+                # 最後から2番目のリンク要素を取得
+                next_page_link = parent_element.find_element(By.CSS_SELECTOR, "li:nth-last-child(2) a")
+                # リンクをクリック
+                driver.execute_script("arguments[0].click();", next_page_link)
+                # ページ数の繰り上げ
+                page_number += 1
+                # countをリセット
+                count -= len(h2_elements)
+            except NoSuchElementException:
+                print("最後から2番目の要素が見つかりませんでした。")            
+        
+        # JavaScript を使用して h2 要素をクリック
+        # 現在のページで存在する 'style_restaurantNameWrap__wvXSR' クラスを持つ要素のリストを取得 
+        h2_elements = driver.find_elements(By.CLASS_NAME, 'style_restaurantNameWrap__wvXSR')
+        driver.execute_script("arguments[0].click();", h2_elements[count])
 
-    for i in range(loop_count):
-        # アイドリングタイム（3秒）を追加
+        # 新しいページが読み込まれるのを待つための短い遅延を追加
         time.sleep(3)
-
-        # ブラウザで指定されたURLを開く
-        driver.get(url)
-
+        
         # メールアドレス (仮で空の文字列を設定)
         mail = ""
 
@@ -66,50 +93,63 @@ def main():
             city = match.group(2)
             rest_of_address = match.group(3)
 
-            #print('都道府県:', prefecture)
-            #print('市区町村:', city)
-            #print('残りの住所:', rest_of_address)
         else:
             print('住所の解析に失敗しました')
+        
+        # 公式ページ(パターン1)
+        official_url1 = driver.find_elements(By.CLASS_NAME, "sv-of.double")
 
-        # 現在のページのURLを取得
-        current_page_url = driver.current_url
+        # 各<a>要素のhref属性の値を取得
+        for url1 in official_url1:
+            try:
+                href_value = url1.get_attribute('href')
+            except NoSuchElementException:
+                print("要素が見つかりませんでした。")
+                
+        # 公式ページ(パターン2)
+        official_url2 = driver.find_elements(By.CLASS_NAME, "url go-off")
 
+        # 各<a>要素のhref属性の値を取得
+        for url1 in official_url2:
+            try:
+                href_value = url1.get_attribute('href')
+            except NoSuchElementException:
+                print("要素が見つかりませんでした。")
+                
+        # 現在のページのURLを格納
+        current_page_url = href_value
+                
         # HTML内に"https"が含まれているかを確認
         ssl = current_page_url.startswith('https')
 
         # データを辞書に格納
         data = {
-            '店舗名': store,
-            '電話番号': phone,
-            'メールアドレス': mail,
-            '都道府県': prefecture,
-            '市区町村': city,
-            '番地': rest_of_address,
-            '建物名': building,
-            'URL': current_page_url,
+            '店舗名': clean_and_encode(store),
+            '電話番号': clean_and_encode(phone),
+            'メールアドレス': clean_and_encode(mail),
+            '都道府県': clean_and_encode(prefecture),
+            '市区町村': clean_and_encode(city),
+            '番地': clean_and_encode(rest_of_address),
+            '建物名': clean_and_encode(building),
+            'URL': clean_and_encode(current_page_url),
             'SSL': ssl
         }
 
         # リストにデータを追加
         data_list.append(data)
-
-        # class属性が "pr-unit4__name" の要素を取得
-        ul_element = driver.find_elements(By.CLASS_NAME, "pr-unit4__name--pr")
-
-        # 4あるうちの1つ目のaタグを取得
-        a_tag = ul_element[0].find_element(By.TAG_NAME, "a")
-
-        # aタグのhref属性を取得し、次のURLとして設定
-        url = a_tag.get_attribute('href')
-
-
+        
+        # "店舗一覧へ戻る"ボタンをクリック
+        a_tag = driver.find_element(By.ID, 'gn_info-breadcrumbs-htpback-go')
+        driver.execute_script("arguments[0].click();", a_tag)
+        
+        # 新しいページが読み込まれるのを待つための短い遅延を追加
+        time.sleep(3)
+        
+        # count数の繰り上げ
+        count += 1  
 
     # データフレームを作成
     df = pd.DataFrame(data_list)
-
-    # データフレームを表示
-    #print(df)
 
     # CSVファイルに保存
     df.to_csv('1-2.csv', index=False, encoding='shift-jis')
