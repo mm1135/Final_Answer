@@ -26,15 +26,12 @@ def main():
     data_list = []
     
     # 条件url
-    url = 'https://r.gnavi.co.jp/area/aream2157/rs/?date=20240106'
+    url = 'https://r.gnavi.co.jp/area/jp/ramen/rs/'
 
     driver.get(url)
     
     # ページが完全に読み込まれるまで待機
     time.sleep(3)
-    
-    # ページ数
-    page_number = 2
     
     # リストの範囲内でループ 今回は50回
     for i in range(50):
@@ -49,8 +46,6 @@ def main():
                 next_page_link = parent_element.find_element(By.CSS_SELECTOR, "li:nth-last-child(2) a")
                 # リンクをクリック
                 driver.execute_script("arguments[0].click();", next_page_link)
-                # ページ数の繰り上げ
-                page_number += 1
                 # countをリセット
                 count -= len(h2_elements)
             except NoSuchElementException:
