@@ -24,11 +24,6 @@ def judge_string(soup, class_name):
     item = soup.find('span', class_=class_name)
     return clean_text_shift_jis(item.string) if item else ""
 
-def get_canonical_url(soup):
-    """Canonical URLを取得し、Shift-JISエンコーディングでクリーンアップしたテキストを返す関数"""
-    canonical_tag = soup.find('link', {'rel': 'canonical'})
-    return clean_text_shift_jis(canonical_tag.attrs['href']) if canonical_tag else ""
-
 def get_dynamic_href(url):
     """動的に生成されるリンクを取得する関数"""
     # Headless ブラウザの起動
@@ -144,8 +139,6 @@ def main():
             else:
                 # URLを構築
                 search_url = f'{target_url}?p={page_num}'
-                
-        print(search_url)
 
         try:
             # ページの取得
