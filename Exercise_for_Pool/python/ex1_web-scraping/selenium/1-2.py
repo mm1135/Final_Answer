@@ -26,7 +26,7 @@ def main():
     data_list = []
     
     # 条件url
-    url = 'https://r.gnavi.co.jp/area/jp/ramen/rs/'
+    url = 'https://r.gnavi.co.jp/area/aream2157/rs/?date=20240106'
 
     driver.get(url)
     
@@ -47,9 +47,12 @@ def main():
                 # リンクをクリック
                 driver.execute_script("arguments[0].click();", next_page_link)
                 # countをリセット
-                count -= len(h2_elements)
+                count = 0
+                # 新しいページが読み込まれるのを待つための短い遅延を追加
+                time.sleep(3)
             except NoSuchElementException:
                 print("最後から2番目の要素が見つかりませんでした。")            
+          
         
         # JavaScript を使用して h2 要素をクリック
         # 現在のページで存在する 'style_restaurantNameWrap__wvXSR' クラスを持つ要素のリストを取得 
