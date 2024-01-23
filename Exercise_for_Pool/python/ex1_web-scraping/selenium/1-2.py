@@ -26,7 +26,9 @@ def main():
     data_list = []
     
     # 条件url
-    url = 'https://r.gnavi.co.jp/area/aream2157/rs/?date=20240106'
+    url = 'https://r.gnavi.co.jp/area/jp/ramen/rs/'
+
+    #url = 'https://r.gnavi.co.jp/area/aream2157/rs/?date=20240106'
 
     driver.get(url)
     
