@@ -398,15 +398,18 @@ def scrape_wlw_data():
     print("URL List:")
     log_to_file("URL List:")
 
-    csv_filename = 'list14.csv'
+    csv_filename = 'list15.csv'
     
     # ブラウザインスタンスをループの外で作成
     options = webdriver.ChromeOptions()
-    options.headless = True  # オプション: ヘッドレスモード（画面表示なし）を有効にする場合
+    # options.headless = True  # オプション: ヘッドレスモード（画面表示なし）を有効にする場合
+    options.add_argument('--headless')
     options.add_argument(f"user-agent={user_agent}")
     driver = webdriver.Chrome(options=options)
 
-    for item in url_list:
+    for o in range(30,50):
+
+        item = url_list[o]
         
         count_sum = 0
         
@@ -502,7 +505,7 @@ def scrape_wlw_data():
             while retry_count < max_retries:
 
                 try:
-                                # URLにアクセス
+                    # URLにアクセス
                     driver.get(categoty_url)
 
                     # ページが完全に読み込まれるまで待機
@@ -602,34 +605,56 @@ def scrape_wlw_data():
                 print("page数：", page)
                 log_to_file("page数：", page)
 
-                box_item = soup.find_all('div', class_=lambda value: value and 'bg-white' in value and 'shadow-200' in value and 'rounded' in value and 'p-1' in value)
+                # 最大で10回まで試行するループ
+                for attempt in range(10):
+                    try:
+                        # ここでWebDriverWaitを使用して要素を待機
+                        box_items = WebDriverWait(driver, 10).until(
+                            EC.presence_of_all_elements_located(
+                                (By.CSS_SELECTOR, 'div.bg-white.shadow-200.rounded.p-1')
+                            )
+                        )
 
+                        # 要素が見つかった場合はループを終了
+                        break
 
-                print("box_item数：",len(box_item))
-                log_to_file("box_item数：",len(box_item))
-                
-                count_sum += len(box_item)
-                print("合計item：",count_sum)
-                log_to_file("合計item：",count_sum)
-                
+                    except TimeoutException:
+                        # TimeoutExceptionが発生した場合、つまり要素が見つからない場合
+                        print(f'TimeoutException: ループ試行 {attempt + 1}')
 
-                for j in range(len(box_item)):
+                # box_itemsは見つかった要素のリストまたは空のリストです
+                print("box_item数：", len(box_items))
+                log_to_file("box_item数：", len(box_items))
 
+                count_sum += len(box_items)
+                print("合計item：", count_sum)
+                log_to_file("合計item：", count_sum)
+
+                # box_itemsは見つかった要素のリストまたは空のリストです
+                # for item in box_items:
+
+                # box_itemsは見つかった要素のリストまたは空のリストです
+                for j in range(len(box_items)):
+                    # 各要素の処理
                     # "a"タグを取得
-                    a_tag = box_item[j].find_all('a')
+                    a_tags = box_items[j].find_elements(By.TAG_NAME, 'a')
+                    if a_tags:
+                        # "a"タグが見つかった場合は最後の要素を取得
+                        a_tag = a_tags[-1]
+                        
+                        # "href"属性の中身を取得
+                        fin_url_detail = a_tag.get_attribute('href')
+                        print("fin_url_detail:", fin_url_detail)
+                        log_to_file("fin_url_detail",fin_url_detail)
+                        # 以下の処理に続く...
+                    else:
+                        print("aタグが見つかりませんでした。")
 
-                    length = len(a_tag)-1
-
-                    a_url = a_tag[length]
-
-                    # "href"属性の中身を取得
-                    href_content = a_url.get('href')
-
-                    fin_url_detail = url + href_content
+                    # fin_url_detail = url + href_content
 
                     # 取得したhrefの中身を出力
-                    print("href_content：",fin_url_detail)
-                    log_to_file("href_content：",fin_url_detail)
+                    # print("fin_url_detail",fin_url_detail)
+                    log_to_file("fin_url_detail",fin_url_detail)
 
                     # URLからページのHTMLを取得
                     response = requests.get(fin_url_detail, headers=headers)
