@@ -398,7 +398,7 @@ def scrape_wlw_data():
     print("URL List:")
     log_to_file("URL List:")
 
-    csv_filename = 'list15.csv'
+    csv_filename = 'list16.csv'
     
     # ブラウザインスタンスをループの外で作成
     options = webdriver.ChromeOptions()
@@ -407,7 +407,7 @@ def scrape_wlw_data():
     options.add_argument(f"user-agent={user_agent}")
     driver = webdriver.Chrome(options=options)
 
-    for o in range(30,50):
+    for o in range(50,80):
 
         item = url_list[o]
         
