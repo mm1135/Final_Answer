@@ -11,6 +11,7 @@ import os
 from selenium.common.exceptions import TimeoutException
 import traceback
 import sys
+from selenium.common.exceptions import StaleElementReferenceException
 
 def log_to_file(*log_texts):
     log_file_path = 'scrape_log.txt'
@@ -398,7 +399,7 @@ def scrape_wlw_data():
     print("URL List:")
     log_to_file("URL List:")
 
-    csv_filename = 'list16.csv'
+    csv_filename = 'list17.csv'
     
     # ブラウザインスタンスをループの外で作成
     options = webdriver.ChromeOptions()
@@ -407,7 +408,7 @@ def scrape_wlw_data():
     options.add_argument(f"user-agent={user_agent}")
     driver = webdriver.Chrome(options=options)
 
-    for o in range(50,80):
+    for o in range(40,50):
 
         item = url_list[o]
         
@@ -471,11 +472,18 @@ def scrape_wlw_data():
                     # TimeoutExceptionが発生した場合、つまりボタンが見つからない場合やタイムアウトした場合
                     print("TimeoutException発生")
                     log_to_file("TimeoutException発生")
+                    retry_count += 1
+                except StaleElementReferenceException:
+                    # 要素がStaleになった場合、再取得を試みる
+                    print("Stale Element Reference Exception 発生") 
+                    log_to_file("Stale Element Reference Exception 発生")      
+                    retry_count += 1          
                 except Exception as e:
                     # 他の例外が発生した場合
                     print("エラーが発生しました:", str(e))
                     log_to_file(f"エラーが発生しました: {type(e).__name__}, {str(e)}")
                     traceback.print_exc()  # トレースバックを出力するためのこの行を追加
+                    retry_count += 1
                 finally:
                     print("finalllyを通過")
                     log_to_file("finalllyを通過")
@@ -518,11 +526,18 @@ def scrape_wlw_data():
                     # TimeoutExceptionが発生した場合、つまりボタンが見つからない場合やタイムアウトした場合
                     print("TimeoutException発生")
                     log_to_file("TimeoutException発生")
+                    retry_count += 1
+                except StaleElementReferenceException:
+                    # 要素がStaleになった場合、再取得を試みる
+                    print("Stale Element Reference Exception 発生")  
+                    log_to_file("Stale Element Reference Exception 発生")
+                    retry_count += 1 
                 except Exception as e:
                     # 他の例外が発生した場合
                     print("エラーが発生しました:", str(e))
                     log_to_file(f"エラーが発生しました: {type(e).__name__}, {str(e)}")
                     traceback.print_exc()  # トレースバックを出力するためのこの行を追加
+                    retry_count += 1
                 finally:
                     print("finalllyを通過")
                     log_to_file("finalllyを通過")
@@ -549,6 +564,12 @@ def scrape_wlw_data():
                     pass
                     print("page_n：",page_n)
                     log_to_file("page_n：",page_n)
+
+                    box_items = WebDriverWait(driver, 10).until(
+                    EC.presence_of_all_elements_located(
+                        (By.CSS_SELECTOR, 'div.bg-white.shadow-200.rounded.p-1')
+                        )
+                    )
 
                     page += 1
                 else:
@@ -583,20 +604,37 @@ def scrape_wlw_data():
                             soup = BeautifulSoup(page_html, 'html.parser')
 
                             # ここで必要な処理を行う
+                            box_items = WebDriverWait(driver, 10).until(
+                            EC.presence_of_all_elements_located(
+                                (By.CSS_SELECTOR, 'div.bg-white.shadow-200.rounded.p-1')
+                                )
+                            )
 
-                            page += 1
-
-                            break
+                            if len(box_items) == 30:
+                                page += 1
+                                break
+                            elif page_n == page:
+                                page += 1
+                                break
+                            else:
+                                continue 
 
                         except TimeoutException:
                             # TimeoutExceptionが発生した場合、つまりボタンが見つからない場合やタイムアウトした場合
                             print("TimeoutException発生")
                             log_to_file("TimeoutException発生")
+                            retry_count += 1
+                        except StaleElementReferenceException:
+                            # 要素がStaleになった場合、再取得を試みる
+                            print("Stale Element Reference Exception 発生")
+                            log_to_file("Stale Element Reference Exception 発生")
+                            retry_count += 1 
                         except Exception as e:
                             # 他の例外が発生した場合
                             print("エラーが発生しました:", str(e))
                             log_to_file(f"エラーが発生しました: {type(e).__name__}, {str(e)}")
                             traceback.print_exc()  # トレースバックを出力するためのこの行を追加
+                            retry_count += 1
                         finally:
                             print("finalllyを通過")
                             log_to_file("finalllyを通過")
@@ -605,23 +643,7 @@ def scrape_wlw_data():
                 print("page数：", page)
                 log_to_file("page数：", page)
 
-                # 最大で10回まで試行するループ
-                for attempt in range(10):
-                    try:
-                        # ここでWebDriverWaitを使用して要素を待機
-                        box_items = WebDriverWait(driver, 10).until(
-                            EC.presence_of_all_elements_located(
-                                (By.CSS_SELECTOR, 'div.bg-white.shadow-200.rounded.p-1')
-                            )
-                        )
-
-                        # 要素が見つかった場合はループを終了
-                        break
-
-                    except TimeoutException:
-                        # TimeoutExceptionが発生した場合、つまり要素が見つからない場合
-                        print(f'TimeoutException: ループ試行 {attempt + 1}')
-
+                
                 # box_itemsは見つかった要素のリストまたは空のリストです
                 print("box_item数：", len(box_items))
                 log_to_file("box_item数：", len(box_items))
@@ -780,12 +802,20 @@ def scrape_wlw_data():
                             print("Cookieの同意ボタンまたは電話番号のボタンが見つかりませんでした。")
                             log_to_file("Cookieの同意ボタンまたは電話番号のボタンが見つかりませんでした。")
                             phone_number_cleaned = ""
+                            retry_count += 1
+                        except StaleElementReferenceException:
+                            # 要素がStaleになった場合、再取得を試みる
+                            print("Stale Element Reference Exception 発生")  
+                            log_to_file("Stale Element Reference Exception 発生")  
+                            phone_number_cleaned = ""
+                            retry_count += 1
                         except Exception as e:
                             # 他の例外が発生した場合
                             print("エラーが発生しました:", str(e))
                             log_to_file(f"エラーが発生しました: {type(e).__name__}, {str(e)}")
                             traceback.print_exc()  # トレースバックを出力するためのこの行を追加
                             phone_number_cleaned = ""
+                            retry_count += 1
                         finally:
                             print("1つ目のデータ取得終了")
                             log_to_file("1つ目のデータ取得終了")
