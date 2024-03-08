@@ -12,11 +12,43 @@ from selenium.common.exceptions import TimeoutException
 import traceback
 import sys
 from selenium.common.exceptions import StaleElementReferenceException
+import psutil
+from datetime import datetime
+
+def check_memory_usage():
+    # プロセスIDを取得
+    pid = psutil.Process(driver.service.process.pid)
+
+    # メモリ使用量を表示
+    print(f"Memory usage before quitting: {pid.memory_info().rss / 1024 / 1024:.2f} MB")
+    log_to_file(f"Memory usage before quitting: {pid.memory_info().rss / 1024 / 1024:.2f} MB")
+
+def close_driver(driver):
+    check_memory_usage()
+
+    try:
+        # driverとdriver.service.processがNoneでないか確認
+        if driver and driver.service.process:
+            driver.close()  # 現在のウィンドウを閉じる
+            driver.quit()  # WebDriverセッションを終了する
+
+            # driver.service.process.pidがNoneでないか確認
+            if driver.service.process.pid:
+                process = psutil.Process(driver.service.process.pid)
+                process.terminate()  # プロセスを強制終了
+    except Exception as e:
+        print(f"Error closing driver: {e}")
+        log_to_file(f"Error closing driver: {e}")
+    finally:
+        check_memory_usage()
+
+
 
 def log_to_file(*log_texts):
     log_file_path = 'scrape_log.txt'
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # 現在の時刻を取得し、文字列に変換
     with open(log_file_path, 'a', encoding='utf-8') as log_file:
-        log_file.write(' '.join(map(str, log_texts)) + '\n')
+        log_file.write(f"{current_time} {' '.join(map(str, log_texts))}\n")  # 時刻をログメッセージの先頭に追加
 
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 
@@ -400,15 +432,8 @@ def scrape_wlw_data():
     log_to_file("URL List:")
 
     csv_filename = 'list17.csv'
-    
-    # ブラウザインスタンスをループの外で作成
-    options = webdriver.ChromeOptions()
-    # options.headless = True  # オプション: ヘッドレスモード（画面表示なし）を有効にする場合
-    options.add_argument('--headless')
-    options.add_argument(f"user-agent={user_agent}")
-    driver = webdriver.Chrome(options=options)
 
-    for o in range(40,50):
+    for o in range(53,70):
 
         item = url_list[o]
         
@@ -463,7 +488,7 @@ def scrape_wlw_data():
 
 
                     # 最初の<li>タグから<a>タグを取得
-                    li_tags = WebDriverWait(driver, 90).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'li[data-v-d1944669]')))
+                    li_tags = WebDriverWait(driver, 90).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'li[data-v-e9a02bb7]')))
 
                     break
 
@@ -820,7 +845,8 @@ def scrape_wlw_data():
                             print("1つ目のデータ取得終了")
                             log_to_file("1つ目のデータ取得終了")
                             # 何かしらのクリーンアップや終了処理が必要な場合
-                            driver1.quit()
+                            # ドライバーを終了
+                            close_driver(driver1)
 
                                     # データを辞書に格納
                     data = {
@@ -855,7 +881,16 @@ def scrape_wlw_data():
             # 他のすべての例外を処理
             print("エラーが発生しました:", str(e))
             log_to_file("エラーが発生しました:", str(e))
-    driver.quit()
     
 if __name__ == "__main__":
-    scrape_wlw_data()
+        # ループの外で WebDriver のインスタンスを作成
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless')
+    options.add_argument(f"user-agent={user_agent}")
+    driver = webdriver.Chrome(options=options)
+
+    try:
+        scrape_wlw_data()
+    finally:
+        # スクレイピングプロセスが完了した後に WebDriver のインスタンスを閉じる
+        close_driver(driver)
